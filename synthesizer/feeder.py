@@ -72,20 +72,20 @@ class Feeder:
 			self._placeholders = [
 				tf.compat.v1.placeholder(tf.int32, shape=(None, None), name="inputs"),
 				tf.compat.v1.placeholder(tf.int32, shape=(None, ), name="input_lengths"),
-				tf.compat.v1.placeholder(tf.float32, shape=(None, None, hparams.num_mels), 
+				tf.compat.v1.placeholder(tf.float32, shape=(None, None, hparams.num_mels),
 							   name="mel_targets"),
 				tf.compat.v1.placeholder(tf.float32, shape=(None, None), name="token_targets"),
 				tf.compat.v1.placeholder(tf.int32, shape=(None, ), name="targets_lengths"),
-				tf.compat.v1.placeholder(tf.int32, shape=(hparams.tacotron_num_gpus, None), 
+				tf.compat.v1.placeholder(tf.int32, shape=(hparams.tacotron_num_gpus, None),
 							   name="split_infos"),
-				
+
 				# SV2TTS
-				tf.compat.v1.placeholder(tf.float32, shape=(None, hparams.speaker_embedding_size), 
+				tf.compat.v1.placeholder(tf.float32, shape=(None, hparams.speaker_embedding_size),
 							   name="speaker_embeddings")
 			]
 
 			# Create queue for buffering data
-			queue = tf.queue.FIFOQueue(8, [tf.int32, tf.int32, tf.float32, tf.float32, 
+			queue = tf.queue.FIFOQueue(8, [tf.int32, tf.int32, tf.float32, tf.float32,
 									 tf.int32, tf.int32, tf.float32], name="input_queue")
 			self._enqueue_op = queue.enqueue(self._placeholders)
 			self.inputs, self.input_lengths, self.mel_targets, self.token_targets, \
@@ -100,7 +100,7 @@ class Feeder:
 			self.speaker_embeddings.set_shape(self._placeholders[6].shape)
 
 			# Create eval queue for buffering eval data
-			eval_queue = tf.queue.FIFOQueue(1, [tf.int32, tf.int32, tf.float32, tf.float32,  
+			eval_queue = tf.queue.FIFOQueue(1, [tf.int32, tf.int32, tf.float32, tf.float32,
 										  tf.int32, tf.int32, tf.float32], name="eval_queue")
 			self._eval_enqueue_op = eval_queue.enqueue(self._placeholders)
 			self.eval_inputs, self.eval_input_lengths, self.eval_mel_targets, \
@@ -138,7 +138,7 @@ class Feeder:
 		token_target = np.asarray([0.] * (len(mel_target) - 1))
 		embed_target = np.load(os.path.join(self._embed_dir, meta[2]))
 		return input_data, mel_target, token_target, embed_target, len(mel_target)
-	
+
 	def make_test_batches(self):
 		start = time.time()
 
@@ -216,7 +216,7 @@ class Feeder:
 
 		targets_lengths = np.asarray([x[-1] for x in batches], dtype=np.int32) #Used to mask loss
 		input_lengths = np.asarray([len(x[0]) for x in batches], dtype=np.int32)
-		
+
 		for i in range(self._hparams.tacotron_num_gpus):
 			batch = batches[size_per_device*i:size_per_device*(i+1)]
 			input_cur_device, input_max_len = self._prepare_inputs([x[0] for x in batch])
@@ -230,13 +230,13 @@ class Feeder:
 			split_infos.append([input_max_len, mel_target_max_len, token_target_max_len])
 
 		split_infos = np.asarray(split_infos, dtype=np.int32)
-		
+
 		### SV2TTS ###
-		
+
 		embed_targets = np.asarray([x[3] for x in batches])
-		
+
 		##############
-		
+
 		return inputs, input_lengths, mel_targets, token_targets, targets_lengths, \
 			   split_infos, embed_targets
 

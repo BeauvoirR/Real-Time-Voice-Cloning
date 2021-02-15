@@ -36,10 +36,10 @@ def start_and_end_indices(quantized, silence_threshold=2):
     for end in range(quantized.size - 1, 1, -1):
         if abs(quantized[end] - 127) > silence_threshold:
             break
-    
+
     assert abs(quantized[start] - 127) > silence_threshold
     assert abs(quantized[end] - 127) > silence_threshold
-    
+
     return start, end
 
 def get_hop_size(hparams):
@@ -52,7 +52,7 @@ def get_hop_size(hparams):
 def linearspectrogram(wav, hparams):
     D = _stft(preemphasis(wav, hparams.preemphasis, hparams.preemphasize), hparams)
     S = _amp_to_db(np.abs(D), hparams) - hparams.ref_level_db
-    
+
     if hparams.signal_normalization:
         return _normalize(S, hparams)
     return S
@@ -60,7 +60,7 @@ def linearspectrogram(wav, hparams):
 def melspectrogram(wav, hparams):
     D = _stft(preemphasis(wav, hparams.preemphasis, hparams.preemphasize), hparams)
     S = _amp_to_db(_linear_to_mel(np.abs(D), hparams), hparams) - hparams.ref_level_db
-    
+
     if hparams.signal_normalization:
         return _normalize(S, hparams)
     return S
@@ -71,9 +71,9 @@ def inv_linear_spectrogram(linear_spectrogram, hparams):
         D = _denormalize(linear_spectrogram, hparams)
     else:
         D = linear_spectrogram
-    
+
     S = _db_to_amp(D + hparams.ref_level_db) #Convert back to linear
-    
+
     if hparams.use_lws:
         processor = _lws_processor(hparams)
         D = processor.run_lws(S.astype(np.float64).T ** hparams.power)
@@ -88,9 +88,9 @@ def inv_mel_spectrogram(mel_spectrogram, hparams):
         D = _denormalize(mel_spectrogram, hparams)
     else:
         D = mel_spectrogram
-    
+
     S = _mel_to_linear(_db_to_amp(D + hparams.ref_level_db), hparams)  # Convert back to linear
-    
+
     if hparams.use_lws:
         processor = _lws_processor(hparams)
         D = processor.run_lws(S.astype(np.float64).T ** hparams.power)
@@ -185,7 +185,7 @@ def _normalize(S, hparams):
                            -hparams.max_abs_value, hparams.max_abs_value)
         else:
             return np.clip(hparams.max_abs_value * ((S - hparams.min_level_db) / (-hparams.min_level_db)), 0, hparams.max_abs_value)
-    
+
     assert S.max() <= 0 and S.min() - hparams.min_level_db >= 0
     if hparams.symmetric_mels:
         return (2 * hparams.max_abs_value) * ((S - hparams.min_level_db) / (-hparams.min_level_db)) - hparams.max_abs_value
@@ -200,7 +200,7 @@ def _denormalize(D, hparams):
                     + hparams.min_level_db)
         else:
             return ((np.clip(D, 0, hparams.max_abs_value) * -hparams.min_level_db / hparams.max_abs_value) + hparams.min_level_db)
-    
+
     if hparams.symmetric_mels:
         return (((D + hparams.max_abs_value) * -hparams.min_level_db / (2 * hparams.max_abs_value)) + hparams.min_level_db)
     else:
